@@ -15,261 +15,98 @@ export interface Exercise {
 
 @Injectable()
 export class ExerciseService {
-  // Question pool is accessed via pickQuestionsForLessonMode
-  // No need to store exercisesByLesson anymore - questions are picked deterministically
-    // Unit 1, Planet 1 (lesson-1)
-    'lesson-1': [
-      {
-        exerciseId: 'ex-1-listening',
-        mode: 'listening',
-        type: 'mcq',
-        prompt: 'Listen and select the correct meaning of "apple"',
-        choices: ['táo', 'cam', 'chuối', 'nho'],
-        correctAnswer: 'táo',
-        hint: 'Think of a red fruit',
-      },
-      {
-        exerciseId: 'ex-1-speaking',
-        mode: 'speaking',
-        type: 'mcq',
-        prompt: 'How do you say "apple" in Vietnamese?',
-        choices: ['táo', 'cam', 'chuối', 'nho'],
-        correctAnswer: 'táo',
-      },
-      {
-        exerciseId: 'ex-1-reading',
-        mode: 'reading',
-        type: 'mcq',
-        prompt: 'Read and select the correct meaning of "táo"',
-        choices: ['apple', 'orange', 'banana', 'grape'],
-        correctAnswer: 'apple',
-      },
-      {
-        exerciseId: 'ex-1-writing',
-        mode: 'writing',
-        type: 'mcq',
-        prompt: 'Write the Vietnamese word for "apple"',
-        choices: ['táo', 'cam', 'chuối', 'nho'],
-        correctAnswer: 'táo',
-      },
-    ],
-    // Unit 1, Planet 2 (lesson-2)
-    'lesson-2': [
-      {
-        exerciseId: 'ex-2-listening',
-        mode: 'listening',
-        type: 'mcq',
-        prompt: 'Listen and select the correct meaning of "orange"',
-        choices: ['táo', 'cam', 'chuối', 'nho'],
-        correctAnswer: 'cam',
-        hint: 'Think of an orange fruit',
-      },
-      {
-        exerciseId: 'ex-2-speaking',
-        mode: 'speaking',
-        type: 'mcq',
-        prompt: 'How do you say "orange" in Vietnamese?',
-        choices: ['táo', 'cam', 'chuối', 'nho'],
-        correctAnswer: 'cam',
-      },
-      {
-        exerciseId: 'ex-2-reading',
-        mode: 'reading',
-        type: 'mcq',
-        prompt: 'Read and select the correct meaning of "cam"',
-        choices: ['apple', 'orange', 'banana', 'grape'],
-        correctAnswer: 'orange',
-      },
-      {
-        exerciseId: 'ex-2-writing',
-        mode: 'writing',
-        type: 'mcq',
-        prompt: 'Write the Vietnamese word for "orange"',
-        choices: ['táo', 'cam', 'chuối', 'nho'],
-        correctAnswer: 'cam',
-      },
-    ],
-    // Unit 1, Planet 3 (lesson-3)
-    'lesson-3': [
-      {
-        exerciseId: 'ex-3-listening',
-        mode: 'listening',
-        type: 'mcq',
-        prompt: 'Listen and select the correct meaning of "banana"',
-        choices: ['táo', 'cam', 'chuối', 'nho'],
-        correctAnswer: 'chuối',
-      },
-      {
-        exerciseId: 'ex-3-speaking',
-        mode: 'speaking',
-        type: 'mcq',
-        prompt: 'How do you say "banana" in Vietnamese?',
-        choices: ['táo', 'cam', 'chuối', 'nho'],
-        correctAnswer: 'chuối',
-      },
-      {
-        exerciseId: 'ex-3-reading',
-        mode: 'reading',
-        type: 'mcq',
-        prompt: 'Read and select the correct meaning of "chuối"',
-        choices: ['apple', 'orange', 'banana', 'grape'],
-        correctAnswer: 'banana',
-      },
-      {
-        exerciseId: 'ex-3-writing',
-        mode: 'writing',
-        type: 'mcq',
-        prompt: 'Write the Vietnamese word for "banana"',
-        choices: ['táo', 'cam', 'chuối', 'nho'],
-        correctAnswer: 'chuối',
-      },
-    ],
-    // Unit 2, Planet 1 (lesson-4)
-    'lesson-4': [
-      {
-        exerciseId: 'ex-4-listening',
-        mode: 'listening',
-        type: 'mcq',
-        prompt: 'Listen and select the correct greeting "Hello"',
-        choices: ['xin chào', 'cảm ơn', 'tạm biệt', 'chào buổi sáng'],
-        correctAnswer: 'xin chào',
-      },
-      {
-        exerciseId: 'ex-4-speaking',
-        mode: 'speaking',
-        type: 'mcq',
-        prompt: 'How do you say "Hello" in Vietnamese?',
-        choices: ['xin chào', 'cảm ơn', 'tạm biệt', 'chào buổi sáng'],
-        correctAnswer: 'xin chào',
-      },
-      {
-        exerciseId: 'ex-4-reading',
-        mode: 'reading',
-        type: 'mcq',
-        prompt: 'Read and select the correct meaning of "xin chào"',
-        choices: ['Hello', 'Thank you', 'Goodbye', 'Good morning'],
-        correctAnswer: 'Hello',
-      },
-      {
-        exerciseId: 'ex-4-writing',
-        mode: 'writing',
-        type: 'mcq',
-        prompt: 'Write the Vietnamese greeting for "Hello"',
-        choices: ['xin chào', 'cảm ơn', 'tạm biệt', 'chào buổi sáng'],
-        correctAnswer: 'xin chào',
-      },
-    ],
-    // Unit 2, Planet 2 (lesson-5)
-    'lesson-5': [
-      {
-        exerciseId: 'ex-5-listening',
-        mode: 'listening',
-        type: 'mcq',
-        prompt: 'Listen and select the correct meaning of "Thank you"',
-        choices: ['xin chào', 'cảm ơn', 'tạm biệt', 'chào buổi sáng'],
-        correctAnswer: 'cảm ơn',
-      },
-      {
-        exerciseId: 'ex-5-speaking',
-        mode: 'speaking',
-        type: 'mcq',
-        prompt: 'How do you say "Thank you" in Vietnamese?',
-        choices: ['xin chào', 'cảm ơn', 'tạm biệt', 'chào buổi sáng'],
-        correctAnswer: 'cảm ơn',
-      },
-      {
-        exerciseId: 'ex-5-reading',
-        mode: 'reading',
-        type: 'mcq',
-        prompt: 'Read and select the correct meaning of "cảm ơn"',
-        choices: ['Hello', 'Thank you', 'Goodbye', 'Good morning'],
-        correctAnswer: 'Thank you',
-      },
-      {
-        exerciseId: 'ex-5-writing',
-        mode: 'writing',
-        type: 'mcq',
-        prompt: 'Write the Vietnamese phrase for "Thank you"',
-        choices: ['xin chào', 'cảm ơn', 'tạm biệt', 'chào buổi sáng'],
-        correctAnswer: 'cảm ơn',
-      },
-    ],
-    // Unit 2, Planet 3 (lesson-6)
-    'lesson-6': [
-      {
-        exerciseId: 'ex-6-listening',
-        mode: 'listening',
-        type: 'mcq',
-        prompt: 'Listen and select the correct meaning of "Goodbye"',
-        choices: ['xin chào', 'cảm ơn', 'tạm biệt', 'chào buổi sáng'],
-        correctAnswer: 'tạm biệt',
-      },
-      {
-        exerciseId: 'ex-6-speaking',
-        mode: 'speaking',
-        type: 'mcq',
-        prompt: 'How do you say "Goodbye" in Vietnamese?',
-        choices: ['xin chào', 'cảm ơn', 'tạm biệt', 'chào buổi sáng'],
-        correctAnswer: 'tạm biệt',
-      },
-      {
-        exerciseId: 'ex-6-reading',
-        mode: 'reading',
-        type: 'mcq',
-        prompt: 'Read and select the correct meaning of "tạm biệt"',
-        choices: ['Hello', 'Thank you', 'Goodbye', 'Good morning'],
-        correctAnswer: 'Goodbye',
-      },
-      {
-        exerciseId: 'ex-6-writing',
-        mode: 'writing',
-        type: 'mcq',
-        prompt: 'Write the Vietnamese phrase for "Goodbye"',
-        choices: ['xin chào', 'cảm ơn', 'tạm biệt', 'chào buổi sáng'],
-        correctAnswer: 'tạm biệt',
-      },
-    ],
-  };
-
+  /**
+   * Get all 4 exercises (one per mode) for a lesson
+   * For backward compatibility - returns one exercise per mode from the pool
+   * Note: Actual lesson sessions use getQuestionsForLessonMode which returns 5 per mode
+   */
   getExercisesForLesson(lessonId: string): Exercise[] {
-    const exercises = this.exercisesByLesson[lessonId] || [];
-    // Ensure we always return exactly 4 exercises (one per modality) in order
-    const modalities: Array<'listening' | 'speaking' | 'reading' | 'writing'> = [
-      'listening',
-      'speaking',
-      'reading',
-      'writing',
-    ];
+    const modalities: Mode[] = ['listening', 'speaking', 'reading', 'writing'];
     
-    const exercisesByMode = new Map<string, Exercise>();
-    exercises.forEach((ex) => exercisesByMode.set(ex.mode, ex));
-    
-    // Return exercises in modality order, with fallback if missing
+    // For each mode, pick 1 question (for compatibility with old endpoints)
     return modalities.map((mode) => {
-      const ex = exercisesByMode.get(mode);
-      if (ex) return ex;
-      // Fallback (should not happen with proper seed data)
-      return {
-        exerciseId: `${lessonId}-${mode}`,
-        mode,
-        type: 'mcq' as const,
-        prompt: `Placeholder ${mode} exercise`,
-        choices: ['Option 1', 'Option 2', 'Option 3', 'Option 4'],
-        correctAnswer: 'Option 1',
-      };
+      const questions = pickQuestionsForLessonMode(lessonId, mode, 1);
+      if (questions.length === 0) {
+        throw new Error(`No questions found for lesson ${lessonId}, mode ${mode}`);
+      }
+      const q = questions[0];
+      return this.questionToExercise(q);
     });
   }
 
+  /**
+   * Get questions for a specific lesson and mode using deterministic picker
+   * Returns exactly `count` questions (default 5 as per spec)
+   */
+  getQuestionsForLessonMode(lessonId: string, mode: Mode, count: number = 5): Exercise[] {
+    const questions = pickQuestionsForLessonMode(lessonId, mode, count);
+    return questions.map((q) => this.questionToExercise(q));
+  }
+
+  /**
+   * Get a single exercise by lessonId and exerciseId (questionId)
+   * Searches across all modes for the lesson using deterministic picker
+   */
   getExercise(lessonId: string, exerciseId: string): Exercise | undefined {
-    const exercises = this.getExercisesForLesson(lessonId);
-    return exercises.find((e) => e.exerciseId === exerciseId);
+    const modes: Mode[] = ['listening', 'speaking', 'reading', 'writing'];
+    
+    // Try each mode to find the question
+    for (const mode of modes) {
+      try {
+        const questions = pickQuestionsForLessonMode(lessonId, mode, 5);
+        const exercise = questions.find((q) => q.questionId === exerciseId);
+        if (exercise) {
+          return this.questionToExercise(exercise);
+        }
+      } catch {
+        // Continue to next mode
+      }
+    }
+    
+    return undefined;
+  }
+
+  /**
+   * Get exercise by questionId directly from pool
+   * (Fallback for direct question ID lookup without lesson context)
+   */
+  getExerciseById(questionId: string): Exercise | undefined {
+    const { QUESTION_POOL_SEED } = require('../data/questionPool.seed');
+    const question = QUESTION_POOL_SEED.find((q: Question) => q.questionId === questionId);
+    if (!question) {
+      return undefined;
+    }
+    return this.questionToExercise(question);
   }
 
   checkAnswer(lessonId: string, exerciseId: string, answer: string): boolean {
-    const exercise = this.getExercise(lessonId, exerciseId);
+    // Try to find exercise in lesson first (using deterministic picker)
+    let exercise = this.getExercise(lessonId, exerciseId);
+    
+    // Fallback: search in question pool directly (for session-based lookups)
+    if (!exercise) {
+      exercise = this.getExerciseById(exerciseId);
+    }
+    
     if (!exercise) {
       return false;
     }
     return exercise.correctAnswer.toLowerCase() === answer.toLowerCase();
+  }
+
+  /**
+   * Convert Question from pool to Exercise format (for backward compatibility)
+   */
+  private questionToExercise(question: Question): Exercise {
+    return {
+      exerciseId: question.questionId,
+      mode: question.mode,
+      type: question.type,
+      prompt: question.prompt,
+      choices: question.choices,
+      correctAnswer: question.correctAnswer,
+      hint: question.hint,
+      explanation: question.explanation,
+    };
   }
 }

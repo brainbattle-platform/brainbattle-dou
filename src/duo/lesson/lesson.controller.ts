@@ -31,11 +31,12 @@ export class LessonController {
     // Build planets array with state and progress
     const planets = activeLessons.map((lesson, index) => {
       // MVP: first planet is available, others locked (or all available)
-      const state = index === 0 ? 'available' : 'locked';
+      // For better demo: make all planets available
+      const state = 'available'; // index === 0 ? 'available' : 'locked';
       const completedModes = this.stateService.getCompletedModesForPlanet(userId, lesson.lessonId);
 
-      // Generate deterministic UI placement
-      const angle = (index * 90) % 360; // Space planets evenly
+      // Generate deterministic UI placement (evenly spaced around orbit)
+      const angle = (index * 120) % 360; // Space 3 planets evenly (120 degrees apart)
       const size = index === 0 ? 'md' : 'sm'; // First planet larger
 
       return {
@@ -166,10 +167,11 @@ export class LessonController {
     }
 
     // Default to first mode if not specified
-    const targetMode = mode || 'listening';
-    const exercises = this.exerciseService.getExercisesForLesson(lessonId);
-    const modeExercises = exercises.filter((e) => e.mode === targetMode);
-    const questionCount = modeExercises.length || 5; // Fallback to 5 if none found
+    const targetMode = (mode || 'listening') as any;
+    
+    // Use question picker to get questions for this lesson+mode (returns exactly 5)
+    const modeQuestions = this.exerciseService.getQuestionsForLessonMode(lessonId, targetMode, 5);
+    const questionCount = modeQuestions.length; // Always 5
 
     // XP reward: 10 XP per question
     const xpReward = questionCount * 10;

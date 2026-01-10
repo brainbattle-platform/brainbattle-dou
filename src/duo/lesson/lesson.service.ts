@@ -22,15 +22,13 @@ export class LessonService {
   ) {}
 
   // Use seed data: 20 Units × 3 Planets = 60 lessons total
-  private skills: Unit[] = UNITS_SEED.map((u) => ({
-    skillId: u.unitId, // Keep skillId internally for backward compatibility
-    title: u.title,
-    order: u.order,
-  }));
+  // Keep skills with unitId directly (matches seed data)
+  private skills: Unit[] = UNITS_SEED;
 
+  // Map lessons: skillId internally maps to unitId from seed
   private lessons: LessonInternal[] = LESSONS_SEED.map((l) => ({
     lessonId: l.lessonId,
-    skillId: l.unitId, // skillId is unitId internally
+    skillId: l.unitId, // skillId is unitId internally (for backward compatibility with existing code)
     title: l.title,
     description: l.subtitle || l.title,
     subtitle: l.subtitle,
@@ -54,8 +52,9 @@ export class LessonService {
   }
 
   getAllSkills() {
+    // Return units with unitId (already correct from seed)
     return this.skills.map((s) => ({
-      unitId: s.skillId, // Map skillId to unitId for response
+      unitId: s.unitId,
       title: s.title,
       order: s.order,
     }));
@@ -83,7 +82,7 @@ export class LessonService {
 
   getActiveUnitId(): string {
     // MVP: return first unit as active
-    return this.skills.length > 0 ? this.skills[0].skillId : 'skill-1';
+    return this.skills.length > 0 ? this.skills[0].unitId : 'unit-1';
   }
 
   startLesson(userId: number, lessonId: string, mode: string) {
@@ -92,9 +91,8 @@ export class LessonService {
       throw new Error('Lesson not found');
     }
 
-    // Filter exercises by mode
-    const allExercises = this.exerciseService.getExercisesForLesson(lessonId);
-    const modeExercises = allExercises.filter((e) => e.mode === mode);
+    // Use deterministic question picker to get exactly 5 questions for this lesson+mode
+    const modeExercises = this.exerciseService.getQuestionsForLessonMode(lessonId, mode as any, 5);
 
     if (modeExercises.length === 0) {
       throw new Error(`No exercises found for mode: ${mode}`);

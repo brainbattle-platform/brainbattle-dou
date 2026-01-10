@@ -96,7 +96,12 @@ export class AnswerService {
 
     // Check if question already answered (ignore duplicate)
     if (session.answeredQuestionIds.has(dto.questionId)) {
-      const exercise = this.exerciseService.getExercise(session.lessonId, dto.questionId);
+      // Look up question from pool (questionId is unique)
+      let exercise = this.exerciseService.getExerciseById(dto.questionId);
+      if (!exercise) {
+        // Fallback: try lesson context
+        exercise = this.exerciseService.getExercise(session.lessonId, dto.questionId);
+      }
       if (!exercise) {
         throw new Error('Exercise not found');
       }
@@ -125,8 +130,12 @@ export class AnswerService {
       };
     }
 
-    // Check answer correctness
-    const exercise = this.exerciseService.getExercise(session.lessonId, dto.questionId);
+    // Check answer correctness - look up question from pool (questionId is unique)
+    let exercise = this.exerciseService.getExerciseById(dto.questionId);
+    if (!exercise) {
+      // Fallback: try lesson context
+      exercise = this.exerciseService.getExercise(session.lessonId, dto.questionId);
+    }
     if (!exercise) {
       throw new Error('Exercise not found');
     }
@@ -197,13 +206,19 @@ export class AnswerService {
       return { hasNext: false };
     }
 
-    // Find next unanswered question
+    // Find next unanswered question from session's questionIds array
     const nextQuestionId = session.questionIds.find((qId: string) => !session.answeredQuestionIds.has(qId));
     if (!nextQuestionId) {
       return { hasNext: false };
     }
 
-    const exercise = this.exerciseService.getExercise(session.lessonId, nextQuestionId);
+    // Look up question from pool (questionId is unique across all lessons)
+    let exercise = this.exerciseService.getExerciseById(nextQuestionId);
+    if (!exercise) {
+      // Fallback: try lesson context lookup
+      exercise = this.exerciseService.getExercise(session.lessonId, nextQuestionId);
+    }
+    
     if (!exercise) {
       return { hasNext: false };
     }
@@ -224,10 +239,15 @@ export class AnswerService {
   }
 
   private generateExplanation(exercise: any, isCorrect: boolean): string {
-    // Use hint if available, otherwise generate simple explanation
+    // Use explanation from question if available
+    if (exercise.explanation) {
+      return exercise.explanation;
+    }
+    // Use hint if available
     if (exercise.hint) {
       return exercise.hint;
     }
+    // Generate simple explanation
     if (isCorrect) {
       return `Correct! The answer is "${exercise.correctAnswer}".`;
     }

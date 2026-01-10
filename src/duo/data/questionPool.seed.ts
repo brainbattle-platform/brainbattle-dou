@@ -205,8 +205,14 @@ export function generateQuestionPool(): Question[] {
         correctAnswer = choices[0]; // First choice is correct for reading
       } else {
         // Other modes: English -> Vietnamese
+        // Answers array is structured so correct answer is always first element
         choices = answers[i];
         correctAnswer = correctAnswers[i];
+        // Ensure correct answer is in choices (should always be first)
+        if (!choices.includes(correctAnswer)) {
+          // Fallback: use first element if mismatch (should not happen with seed data)
+          correctAnswer = choices[0];
+        }
       }
       
       pool.push({
