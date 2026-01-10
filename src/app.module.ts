@@ -11,9 +11,11 @@ import { ReviewModule } from './duo/review/review.module';
 import { RecommendModule } from './duo/recommend/recommend.module';
 import { TelemetryModule } from './duo/telemetry/telemetry.module';
 import { NotificationModule } from './duo/notification/notification.module';
+import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
   imports: [
+    PrismaModule,
     UserProfileModule,
     LanguageModule,
     CourseModule,

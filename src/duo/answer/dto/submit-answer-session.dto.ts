@@ -1,14 +1,10 @@
 import { IsString, IsNumber, IsOptional } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
-export class SubmitAnswerDto {
-  @ApiProperty({ description: 'Session ID', example: 'sess_7f2c1f1e' })
+export class SubmitAnswerSessionDto {
+  @ApiProperty({ description: 'Question ID', example: 'ex-1-listening' })
   @IsString()
-  sessionId: string;
-
-  @ApiProperty({ description: 'Exercise ID', example: 'ex-1' })
-  @IsString()
-  exerciseId: string;
+  questionId: string;
 
   @ApiProperty({ description: 'User answer', example: 'táo' })
   @IsString()
@@ -19,3 +15,4 @@ export class SubmitAnswerDto {
   @IsNumber()
   timeMs?: number;
 }
+

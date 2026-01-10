@@ -5,6 +5,11 @@ import { ProgressService } from './progress.service';
 export class ProgressController {
   constructor(private readonly service: ProgressService) {}
 
+  @Get()
+  getProgress() {
+    return this.service.getProgress(1);
+  }
+
   @Get('health')
   health() {
     return {

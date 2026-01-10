@@ -1,0 +1,96 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// BrainBattle Duo MVP Schema
+// Aligned with Figma flow: Unit (topic) → Planet (lesson) → 4 modes (listening/speaking/reading/writing)
+// NOTE: Content (lessons, exercises) stored in-memory, only progress/runtime state in DB
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Runtime learning session tracking a specific mode within a planet (lesson)
+model LessonSession {
+  id           String   @id @default(cuid())
+  userId       Int
+  unitId       String   // Unit (topic) this session belongs to
+  lessonId     String   // Planet (lesson) being practiced
+  mode         String   // Modality: "listening" | "speaking" | "reading" | "writing"
+  startedAt    DateTime @default(now())
+  finishedAt   DateTime?
+  correctCount Int      @default(0)
+  totalCount   Int      @default(0) // totalQuestions in this session
+  xpEarned     Int      @default(0)
+  attempts     Attempt[]
+
+  @@index([userId, lessonId])
+  @@index([userId, unitId])
+}
+
+// Individual question/exercise attempt within a session
+model Attempt {
+  id         String        @id @default(cuid())
+  sessionId  String
+  questionId String        // Exercise/question ID (content stored in-memory)
+  mode       String        // Modality for which this attempt was made
+  isCorrect  Boolean
+  answer     Json          // User's answer (can be string, object for match, etc.)
+  timeMs     Int?          // Time taken in milliseconds
+  createdAt  DateTime      @default(now())
+  session    LessonSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, questionId]) // Prevent duplicate submissions
+}
+
+// User's overall learning progress
+model UserProgress {
+  userId        Int      @id
+  xpTotal       Int      @default(0)
+  streak        Int      @default(0)
+  lastActiveDate DateTime @default(now())
+  
+  // Hearts system (Duolingo-style)
+  hearts        Int      @default(5)      // Current hearts available
+  maxHearts     Int      @default(5)      // Maximum hearts (typically 5)
+  lastHeartRefill DateTime @default(now()) // When hearts last regenerated
+  
+  // Progress tracking relations
+  unitProgress  UnitProgress[]
+  planetModeProgress PlanetModeProgress[]
+
+  @@map("user_progress")
+}
+
+// Mastery progress per Unit (topic)
+model UnitProgress {
+  userId  Int
+  unitId  String  // Unit (topic) ID (e.g., "unit-1")
+  mastery Int     @default(0) // Mastery level for this unit
+  user    UserProgress @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@id([userId, unitId])
+  @@map("unit_progress")
+}
+
+// Progress tracking per Planet (lesson) × Mode combination
+// Enables: "How many modes completed for this planet?" and "What's my best score in listening for this lesson?"
+model PlanetModeProgress {
+  userId      Int
+  lessonId    String  // Planet (lesson) ID
+  mode        String  // Modality: "listening" | "speaking" | "reading" | "writing"
+  state       String  @default("available") // "available" | "locked" | "completed"
+  bestScore   Float   @default(0.0)         // Best accuracy achieved (0.0 - 1.0)
+  completedAt DateTime?                     // When this mode was first completed
+  lastAttemptAt DateTime?                   // Last time user practiced this mode
+  user        UserProgress @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@id([userId, lessonId, mode])
+  @@index([userId, lessonId]) // For queries like "get all modes for a planet"
+  @@index([userId, mode])     // For Practice Hub: "weak skills by mode"
+  @@map("planet_mode_progress")
+}
