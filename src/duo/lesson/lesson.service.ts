@@ -1,12 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { ExerciseService } from '../exercise/exercise.service';
 import { InMemoryStateService } from '../progress/in-memory-state.service';
+import { UNITS_SEED, Unit } from '../data/units.seed';
+import { LESSONS_SEED, Lesson } from '../data/lessons.seed';
 
-export interface Lesson {
+export interface LessonInternal {
   lessonId: string;
-  skillId: string;
+  skillId: string; // Internal: skillId maps to unitId for responses
   title: string;
   description: string;
+  subtitle?: string;
   order: number;
   estimatedMinutes: number;
 }
@@ -18,65 +21,22 @@ export class LessonService {
     private readonly stateService: InMemoryStateService,
   ) {}
 
-  // Seed data: 2 Units (skills) × 3 Planets (lessons) = 6 lessons total
-  // Each planet has exactly 4 exercises (one per modality: listening, speaking, reading, writing)
-  private skills = [
-    { skillId: 'skill-1', title: 'Basics', order: 1 }, // Unit 1
-    { skillId: 'skill-2', title: 'Greetings', order: 2 }, // Unit 2
-  ];
+  // Use seed data: 20 Units × 3 Planets = 60 lessons total
+  private skills: Unit[] = UNITS_SEED.map((u) => ({
+    skillId: u.unitId, // Keep skillId internally for backward compatibility
+    title: u.title,
+    order: u.order,
+  }));
 
-  private lessons: Lesson[] = [
-    // Unit 1 (skill-1): Basics - 3 Planets
-    {
-      lessonId: 'lesson-1',
-      skillId: 'skill-1',
-      title: 'Fruits 1',
-      description: 'Learn basic fruit names: apple, orange, banana.',
-      order: 1,
-      estimatedMinutes: 5,
-    },
-    {
-      lessonId: 'lesson-2',
-      skillId: 'skill-1',
-      title: 'Fruits 2',
-      description: 'Learn more fruit names: orange, banana, grape.',
-      order: 2,
-      estimatedMinutes: 5,
-    },
-    {
-      lessonId: 'lesson-3',
-      skillId: 'skill-1',
-      title: 'Fruits 3',
-      description: 'Master fruit vocabulary: banana and more.',
-      order: 3,
-      estimatedMinutes: 5,
-    },
-    // Unit 2 (skill-2): Greetings - 3 Planets
-    {
-      lessonId: 'lesson-4',
-      skillId: 'skill-2',
-      title: 'Greetings 1',
-      description: 'Learn basic greetings: Hello, Thank you, Goodbye.',
-      order: 1,
-      estimatedMinutes: 5,
-    },
-    {
-      lessonId: 'lesson-5',
-      skillId: 'skill-2',
-      title: 'Greetings 2',
-      description: 'Practice polite expressions: Thank you, Please.',
-      order: 2,
-      estimatedMinutes: 5,
-    },
-    {
-      lessonId: 'lesson-6',
-      skillId: 'skill-2',
-      title: 'Greetings 3',
-      description: 'Master farewell expressions: Goodbye, See you later.',
-      order: 3,
-      estimatedMinutes: 5,
-    },
-  ];
+  private lessons: LessonInternal[] = LESSONS_SEED.map((l) => ({
+    lessonId: l.lessonId,
+    skillId: l.unitId, // skillId is unitId internally
+    title: l.title,
+    description: l.subtitle || l.title,
+    subtitle: l.subtitle,
+    order: l.order,
+    estimatedMinutes: l.estimatedMinutes,
+  }));
 
   getLessonsBySkill(skillId: string) {
     const filtered = this.lessons.filter((l) => l.skillId === skillId);
@@ -89,7 +49,7 @@ export class LessonService {
     }));
   }
 
-  getLessonDetail(lessonId: string): Lesson | undefined {
+  getLessonDetail(lessonId: string): LessonInternal | undefined {
     return this.lessons.find((l) => l.lessonId === lessonId);
   }
 
