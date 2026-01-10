@@ -1,4 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import { Question, Mode } from '../data/questionPool.seed';
+import { pickQuestionsForLessonMode } from '../data/questionPicker.util';
 
 export interface Exercise {
   exerciseId: string;
@@ -8,15 +10,13 @@ export interface Exercise {
   choices?: string[];
   correctAnswer: string;
   hint?: string;
+  explanation?: string;
 }
 
 @Injectable()
 export class ExerciseService {
-  // Seed data: 2 Units × 3 Planets × 4 exercises (modalities) = 24 exercises
-  // Unit 1 (skill-1): Basics
-  // Unit 2 (skill-2): Greetings
-  
-  private exercisesByLesson: Record<string, Exercise[]> = {
+  // Question pool is accessed via pickQuestionsForLessonMode
+  // No need to store exercisesByLesson anymore - questions are picked deterministically
     // Unit 1, Planet 1 (lesson-1)
     'lesson-1': [
       {
