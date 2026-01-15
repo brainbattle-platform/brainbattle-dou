@@ -36,33 +36,36 @@ export class FilesService {
       throw new BadRequestException('File size must not exceed 15MB');
     }
 
-    // Generate unique filename
+    // Note: This service is legacy and uses local storage
+    // New audio uploads should use AudioAssetsService which uses MinIO
+    // Keeping this for backward compatibility but files should be migrated to MinIO
+
+    // Generate MinIO key (since we're using MinIO, not local storage)
     const ext = path.extname(file.originalname);
     const uniqueId = randomBytes(16).toString('hex');
-    const filename = `${uniqueId}${ext}`;
-    const localPath = path.join(this.uploadDir, filename);
-    const url = `${this.publicBaseUrl}/api/files/audio/${filename}`;
+    const key = `audio/${uniqueId}${ext}`;
+    const bucket = 'bb-learning';
 
-    // Save file to disk
-    fs.writeFileSync(localPath, file.buffer);
-
-    // Save metadata to database
+    // Save metadata to database (using schema fields: originalName, key, bucket)
     const audioAsset = await this.prisma.audioAsset.create({
       data: {
-        filename: file.originalname,
-        localPath,
-        url,
+        key,
+        bucket,
+        originalName: file.originalname,
         contentType: file.mimetype,
         size: file.size,
       },
     });
 
+    // Compute URL from public base URL + key
+    const computedUrl = `${this.publicBaseUrl}/api/files/audio/${audioAsset.id}`;
+
     return {
       id: audioAsset.id,
-      filename: audioAsset.filename,
+      filename: audioAsset.originalName, // Use originalName for backward compatibility
       contentType: audioAsset.contentType,
       size: audioAsset.size,
-      url: audioAsset.url,
+      url: computedUrl,
       createdAt: audioAsset.createdAt,
     };
   }
@@ -75,7 +78,7 @@ export class FilesService {
 
     const where = search
       ? {
-          filename: {
+          originalName: {
             contains: search,
             mode: 'insensitive' as const,
           },
@@ -90,8 +93,9 @@ export class FilesService {
         orderBy: { createdAt: 'desc' },
         select: {
           id: true,
-          filename: true,
-          url: true,
+          originalName: true,
+          key: true,
+          bucket: true,
           size: true,
           createdAt: true,
         },
@@ -99,8 +103,17 @@ export class FilesService {
       this.prisma.audioAsset.count({ where }),
     ]);
 
+    // Compute URLs for items
+    const itemsWithUrl = items.map((item) => ({
+      id: item.id,
+      filename: item.originalName, // Use originalName as filename for backward compatibility
+      url: `${this.publicBaseUrl}/api/files/audio/${item.id}`,
+      size: item.size,
+      createdAt: item.createdAt,
+    }));
+
     return {
-      items,
+      items: itemsWithUrl,
       total,
       page,
       limit,
@@ -119,10 +132,13 @@ export class FilesService {
       throw new NotFoundException('Audio file not found');
     }
 
+    // Compute URL from public base URL
+    const computedUrl = `${this.publicBaseUrl}/api/files/audio/${audioAsset.id}`;
+
     return {
       id: audioAsset.id,
-      filename: audioAsset.filename,
-      url: audioAsset.url,
+      filename: audioAsset.originalName, // Use originalName as filename
+      url: computedUrl,
       contentType: audioAsset.contentType,
       size: audioAsset.size,
       createdAt: audioAsset.createdAt,
@@ -145,14 +161,17 @@ export class FilesService {
     const updated = await this.prisma.audioAsset.update({
       where: { id },
       data: {
-        ...(filename && { filename }),
+        ...(filename && { originalName: filename }), // Use originalName field
       },
     });
 
+    // Compute URL from public base URL
+    const computedUrl = `${this.publicBaseUrl}/api/files/audio/${updated.id}`;
+
     return {
       id: updated.id,
-      filename: updated.filename,
-      url: updated.url,
+      filename: updated.originalName, // Use originalName as filename
+      url: computedUrl,
       contentType: updated.contentType,
       size: updated.size,
       createdAt: updated.createdAt,
@@ -172,17 +191,9 @@ export class FilesService {
       throw new NotFoundException('Audio file not found');
     }
 
-    // Delete file from disk if local storage
-    if (audioAsset.localPath) {
-      try {
-        if (fs.existsSync(audioAsset.localPath)) {
-          fs.unlinkSync(audioAsset.localPath);
-        }
-      } catch (error) {
-        // Log error but continue with DB deletion
-        console.error('Failed to delete file from disk:', error);
-      }
-    }
+    // Note: Files are stored in MinIO, not local disk
+    // If you need to delete from MinIO, use StorageService here
+    // For now, we only delete from database
 
     // Delete from database
     await this.prisma.audioAsset.delete({
@@ -204,16 +215,12 @@ export class FilesService {
       throw new NotFoundException('Audio file not found');
     }
 
-    if (audioAsset.localPath && fs.existsSync(audioAsset.localPath)) {
-      const buffer = fs.readFileSync(audioAsset.localPath);
-      return {
-        buffer,
-        contentType: audioAsset.contentType,
-        filename: audioAsset.filename,
-      };
-    }
-
-    throw new NotFoundException('Audio file not found on disk');
+    // Note: Files are stored in MinIO, not local disk
+    // This method should be refactored to use StorageService to get file from MinIO
+    // For now, throw error indicating file needs to be retrieved from MinIO
+    throw new NotFoundException(
+      'Audio file is stored in MinIO. Use StorageService to retrieve it.',
+    );
   }
 }
 

@@ -11,7 +11,7 @@ export class StorageService implements OnModuleInit {
   private readonly publicBaseUrl?: string;
 
   constructor(private readonly configService: ConfigService) {
-    const endpoint = this.configService.get<string>('MINIO_ENDPOINT') || 'localhost';
+    const endpoint = this.configService.get<string>('MINIO_ENDPOINT') || 'bb-minio';
     const port = this.configService.get<number>('MINIO_PORT') || 9000;
     const useSSL = this.configService.get<string>('MINIO_USE_SSL') === 'true';
     const accessKey = this.configService.get<string>('MINIO_ACCESS_KEY') || 'minio-root';
@@ -153,8 +153,8 @@ export class StorageService implements OnModuleInit {
       return `${this.publicBaseUrl}/${key}`;
     }
     // Fallback: use our streaming endpoint (requires audioAssetId)
-    // Use app base URL from env or default to localhost:3001
-    const appBaseUrl = this.configService.get<string>('PUBLIC_BASE_URL') || 'http://localhost:3001';
+    // Use app base URL from env or default to service name
+    const appBaseUrl = this.configService.get<string>('PUBLIC_BASE_URL') || 'http://dou-service:3001';
     if (audioAssetId) {
       return `${appBaseUrl}/api/learning/assets/audio/${audioAssetId}/file`;
     }

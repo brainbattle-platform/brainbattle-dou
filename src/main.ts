@@ -24,8 +24,9 @@ async function bootstrap() {
   const prismaService = app.get(PrismaService);
   await prismaService.enableShutdownHooks(app);
 
-  await app.listen(3001, '0.0.0.0');
-  console.log('BrainBattle Duo service is running on http://0.0.0.0:3001/api (accessible from network)');
-  console.log('Swagger UI available at http://localhost:3001/api/docs');
+  const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
+  await app.listen(port, '0.0.0.0');
+  console.log(`BrainBattle Duo service is running on port ${port}`);
+  console.log(`Swagger UI available at http://0.0.0.0:${port}/api/docs`);
 }
 bootstrap();

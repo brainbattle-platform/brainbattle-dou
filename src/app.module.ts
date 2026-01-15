@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { UserProfileModule } from './duo/user-profile/user-profile.module';
 import { LanguageModule } from './duo/language/language.module';
 import { CourseModule } from './duo/course/course.module';
@@ -21,6 +22,7 @@ import { UserContextModule } from './common/user/user-context.module';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({ isGlobal: true }), // Global config module
     PrismaModule,
     UserContextModule, // Global user context module
     UserProfileModule,
