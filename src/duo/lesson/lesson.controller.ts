@@ -7,8 +7,9 @@ import { InMemoryStateService } from '../progress/in-memory-state.service';
 import { HeartsService } from '../progress/hearts.service';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { successResponse } from '../../common/utils/response.util';
+import { UserContextService } from '../../common/user/user-context.service';
 
-@ApiTags('Learning')
+@ApiTags('Learning (Legacy - In-Memory)')
 @Controller('duo')
 export class LessonController {
   constructor(
@@ -16,13 +17,14 @@ export class LessonController {
     private readonly exerciseService: ExerciseService,
     private readonly stateService: InMemoryStateService,
     private readonly heartsService: HeartsService,
+    private readonly userContext: UserContextService,
   ) {}
 
   @Get('map')
-  @ApiOperation({ summary: 'Get learning map (Figma 5.1)' })
+  @ApiOperation({ summary: 'Get learning map (Figma 5.1) [LEGACY - In-Memory]' })
   @ApiResponse({ status: 200, description: 'Units and planets with progress' })
   getMap() {
-    const userId = 1;
+    const userId = this.userContext.getUserIdAsNumber();
     const activeUnitId = this.service.getActiveUnitId();
     const units = this.service.getAllSkills();
     const allLessons = this.service.getAllLessons();
@@ -65,10 +67,10 @@ export class LessonController {
   }
 
   @Get('home')
-  @ApiOperation({ summary: 'Get user home screen data' })
+  @ApiOperation({ summary: 'Get user home screen data [LEGACY - In-Memory]' })
   @ApiResponse({ status: 200, description: 'User progress and next lesson' })
   getHome() {
-    const userId = 1;
+    const userId = this.userContext.getUserIdAsNumber();
     const progress = this.stateService.getUserProgress(userId);
     const continueLesson = this.service.getFirstAvailableLesson();
 
@@ -89,7 +91,7 @@ export class LessonController {
   }
 
   @Get('skills/:skillId/lessons')
-  @ApiOperation({ summary: 'Get lessons for a skill' })
+  @ApiOperation({ summary: 'Get lessons for a skill [LEGACY]' })
   @ApiParam({ name: 'skillId', type: String })
   @ApiResponse({ status: 200, description: 'List of lessons' })
   getLessonsBySkill(@Param('skillId') skillId: string) {
@@ -101,7 +103,7 @@ export class LessonController {
   }
 
   @Get('lessons/:id')
-  @ApiOperation({ summary: 'Get lesson (planet) detail' })
+  @ApiOperation({ summary: 'Get lesson (planet) detail [LEGACY]' })
   @ApiParam({ name: 'id', type: String })
   @ApiResponse({ status: 200, description: 'Planet detail with exercise count (always 4)' })
   getLessonDetail(@Param('id') id: string) {
@@ -123,11 +125,11 @@ export class LessonController {
   }
 
   @Get('lessons/:lessonId/modes')
-  @ApiOperation({ summary: 'Get modes for a planet (Figma 5.2)' })
+  @ApiOperation({ summary: 'Get modes for a planet (Figma 5.2) [LEGACY - In-Memory]' })
   @ApiParam({ name: 'lessonId', type: String })
   @ApiResponse({ status: 200, description: '4 modes with state and best score' })
   getLessonModes(@Param('lessonId') lessonId: string) {
-    const userId = 1;
+    const userId = this.userContext.getUserIdAsNumber();
     const lesson = this.service.getLessonDetail(lessonId);
     if (!lesson) {
       throw new HttpException(
@@ -152,12 +154,12 @@ export class LessonController {
   }
 
   @Get('lessons/:lessonId/overview')
-  @ApiOperation({ summary: 'Get lesson overview (Figma 5.4)' })
+  @ApiOperation({ summary: 'Get lesson overview (Figma 5.4) [LEGACY - In-Memory]' })
   @ApiParam({ name: 'lessonId', type: String })
   @ApiQuery({ name: 'mode', required: false, type: String })
   @ApiResponse({ status: 200, description: 'Lesson overview with XP, hearts, question count' })
   getLessonOverview(@Param('lessonId') lessonId: string, @Query('mode') mode?: string) {
-    const userId = 1;
+    const userId = this.userContext.getUserIdAsNumber();
     const lesson = this.service.getLessonDetail(lessonId);
     if (!lesson) {
       throw new HttpException(
@@ -199,7 +201,7 @@ export class LessonController {
   }
 
   @Get('lessons/:id/exercises')
-  @ApiOperation({ summary: 'Get exercises for a lesson (fallback/debug)' })
+  @ApiOperation({ summary: 'Get exercises for a lesson (fallback/debug) [LEGACY - DEBUG]' })
   @ApiParam({ name: 'id', type: String })
   @ApiResponse({ status: 200, description: 'List of exercises (exactly 4, one per modality)' })
   getExercisesForLesson(@Param('id') id: string) {
@@ -218,11 +220,11 @@ export class LessonController {
   }
 
   @Post('lesson/start')
-  @ApiOperation({ summary: 'Start a lesson (planet) session (Figma 5.5)' })
+  @ApiOperation({ summary: 'Start a lesson (planet) session (Figma 5.5) [LEGACY - In-Memory]' })
   @ApiResponse({ status: 200, description: 'Lesson started with first question and hearts' })
   startLesson(@Body() dto: StartLessonDto) {
     try {
-      const userId = 1;
+      const userId = this.userContext.getUserIdAsNumber();
       const result = this.service.startLesson(userId, dto.lessonId, dto.mode);
       const hearts = this.heartsService.getHearts(userId);
 
@@ -242,7 +244,7 @@ export class LessonController {
   }
 
   @Post('lesson/finish')
-  @ApiOperation({ summary: 'Finish a lesson session' })
+  @ApiOperation({ summary: 'Finish a lesson session [LEGACY - In-Memory]' })
   @ApiResponse({ status: 200, description: 'Lesson finished' })
   finishLesson(@Body() dto: FinishLessonDto) {
     try {

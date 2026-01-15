@@ -4,6 +4,7 @@ import { AppModule } from './app.module';
 import { PrismaService } from './prisma/prisma.service';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { HttpExceptionFilter, AllExceptionsFilter } from './common/filters/http-exception.filter';
+import { createSwaggerDocumentOptions, filterSwaggerDocument } from './common/swagger/swagger-document.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -13,17 +14,18 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('BrainBattle Duo API')
-    .setDescription('Duolingo-style learning service (MVP)')
+    .setDescription('Duolingo-style learning service (MVP). Legacy endpoints under /api/duo/* are hidden by default. Set SHOW_LEGACY_SWAGGER=true to show them.')
     .setVersion('1.0')
     .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
+  const document = SwaggerModule.createDocument(app, config, createSwaggerDocumentOptions());
+  const filteredDocument = filterSwaggerDocument(document);
+  SwaggerModule.setup('api/docs', app, filteredDocument);
 
   const prismaService = app.get(PrismaService);
   await prismaService.enableShutdownHooks(app);
 
-  await app.listen(3001);
-  console.log('BrainBattle Duo service is running on http://localhost:3001/api');
+  await app.listen(3001, '0.0.0.0');
+  console.log('BrainBattle Duo service is running on http://0.0.0.0:3001/api (accessible from network)');
   console.log('Swagger UI available at http://localhost:3001/api/docs');
 }
 bootstrap();

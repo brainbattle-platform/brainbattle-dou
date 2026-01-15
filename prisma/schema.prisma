@@ -14,7 +14,49 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Runtime learning session tracking a specific mode within a planet (lesson)
+// Quiz attempt (stable attemptId stored in DB)
+model QuizAttempt {
+  id              String           @id @default(cuid())
+  userId          Int
+  lessonId        String           // Lesson being practiced
+  mode            String           // Modality: "listening" | "speaking" | "reading" | "writing"
+  unitId          String           // Unit (topic) this attempt belongs to
+  questionIds     String[]         // Ordered list of question IDs for this mode
+  startedAt       DateTime         @default(now())
+  finishedAt      DateTime?
+  correctCount    Int              @default(0)
+  totalQuestions  Int              @default(0)
+  xpEarned        Int              @default(0)
+  questionAttempts QuestionAttempt[]
+
+  @@index([userId, lessonId])
+  @@index([userId, unitId])
+  @@index([userId, startedAt])
+  @@map("quiz_attempts")
+}
+
+// Individual question attempt within a quiz (stores each submitted answer)
+model QuestionAttempt {
+  id              String       @id @default(cuid())
+  attemptId       String       // Quiz attempt ID (stable)
+  userId          Int
+  questionId      String       // Exercise/question ID (content stored in-memory)
+  selectedOptionId String?     // For MCQ: selected option index or text
+  answerText      String?      // For text-based answers
+  answerJson      Json?        // For complex answers (match, etc.)
+  isCorrect       Boolean
+  answeredAt      DateTime    @default(now())
+  timeMs          Int?         // Time taken in milliseconds
+  attempt         QuizAttempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  @@unique([attemptId, questionId]) // Prevent duplicate submissions per attempt
+  @@index([attemptId])
+  @@index([userId, questionId])
+  @@index([userId, answeredAt])
+  @@map("question_attempts")
+}
+
+// Legacy: Runtime learning session tracking (kept for backward compatibility)
 model LessonSession {
   id           String   @id @default(cuid())
   userId       Int
@@ -32,7 +74,7 @@ model LessonSession {
   @@index([userId, unitId])
 }
 
-// Individual question/exercise attempt within a session
+// Legacy: Individual question/exercise attempt within a session
 model Attempt {
   id         String        @id @default(cuid())
   sessionId  String
@@ -54,16 +96,23 @@ model UserProgress {
   streak        Int      @default(0)
   lastActiveDate DateTime @default(now())
   
-  // Hearts system (Duolingo-style)
-  hearts        Int      @default(5)      // Current hearts available
-  maxHearts     Int      @default(5)      // Maximum hearts (typically 5)
-  lastHeartRefill DateTime @default(now()) // When hearts last regenerated
-  
   // Progress tracking relations
   unitProgress  UnitProgress[]
   planetModeProgress PlanetModeProgress[]
+  userHearts   UserHearts?
 
   @@map("user_progress")
+}
+
+// User hearts (separate model for better persistence)
+model UserHearts {
+  userId        Int      @id
+  current       Int      @default(5)      // Current hearts available
+  max           Int      @default(5)      // Maximum hearts (typically 5)
+  lastRefillAt  DateTime @default(now())   // When hearts last regenerated
+  user          UserProgress @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@map("user_hearts")
 }
 
 // Mastery progress per Unit (topic)
@@ -93,4 +142,112 @@ model PlanetModeProgress {
   @@index([userId, lessonId]) // For queries like "get all modes for a planet"
   @@index([userId, mode])     // For Practice Hub: "weak skills by mode"
   @@map("planet_mode_progress")
+}
+
+// User lesson progress (alias for better clarity)
+// This is the same as PlanetModeProgress but provides a clearer name
+// We keep PlanetModeProgress for backward compatibility
+
+// ============================================
+// Content Management Models (Admin CRUD)
+// ============================================
+
+// Unit (topic) - top-level grouping
+model Unit {
+  id          String   @id @default(cuid())
+  unitId      String   @unique // Legacy ID for backward compatibility (e.g., "unit-1")
+  title       String
+  order       Int      @default(0)
+  published   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  lessons     Lesson[]
+
+  @@index([order])
+  @@index([published])
+  @@map("units")
+}
+
+// Lesson (planet) - belongs to a unit
+model Lesson {
+  id              String   @id @default(cuid())
+  lessonId        String   @unique // Legacy ID for backward compatibility (e.g., "lesson-1-1")
+  unitId          String   // References Unit.unitId (not Unit.id for backward compatibility)
+  title           String
+  subtitle        String?
+  order           Int      @default(0)
+  estimatedMinutes Int     @default(3)
+  published       Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  unit            Unit     @relation(fields: [unitId], references: [unitId], onDelete: Cascade)
+  questions       Question[]
+
+  @@index([unitId, order])
+  @@index([published])
+  @@map("lessons")
+}
+
+// Question - belongs to a lesson, has mode and type
+model Question {
+  id              String   @id @default(cuid())
+  questionId      String   @unique // Legacy ID for backward compatibility
+  lessonId        String   // References Lesson.lessonId (not Lesson.id for backward compatibility)
+  mode            String   // "listening" | "speaking" | "reading" | "writing"
+  type            String   @default("MCQ") // "MCQ" | "LISTEN_AND_SELECT" | "TYPE_ANSWER"
+  prompt          String
+  correctAnswer   String
+  explanation     String?
+  hint            String?
+  audioAssetId    String?  // For LISTEN_AND_SELECT questions - references AudioAsset
+  placeholder     String?  // For TYPE_ANSWER questions
+  caseSensitive   Boolean  @default(false) // For TYPE_ANSWER questions
+  order           Int      @default(0)
+  published       Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  lesson          Lesson   @relation(fields: [lessonId], references: [lessonId], onDelete: Cascade)
+  options         QuestionOption[]
+  audioAsset      AudioAsset? @relation(fields: [audioAssetId], references: [id], onDelete: SetNull)
+
+  @@index([lessonId, mode, order])
+  @@index([published])
+  @@index([audioAssetId])
+  @@map("questions")
+}
+
+// Question Option - for MCQ questions (choices)
+model QuestionOption {
+  id          String   @id @default(cuid())
+  questionId String
+  text        String
+  isCorrect   Boolean  @default(false)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  question    Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId, order])
+  @@map("question_options")
+}
+
+// Audio Asset - for LISTEN_AND_SELECT questions
+model AudioAsset {
+  id           String     @id @default(cuid())
+  key          String     @unique // MinIO object key
+  bucket       String     @default("bb-learning")
+  originalName String
+  contentType  String
+  size         Int        // Size in bytes
+  durationSec  Float?     // Optional duration in seconds
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  questions    Question[] // Questions that use this audio
+
+  @@index([originalName])
+  @@map("audio_assets")
 }

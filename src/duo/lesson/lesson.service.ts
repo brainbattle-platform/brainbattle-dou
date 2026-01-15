@@ -1,8 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { ExerciseService } from '../exercise/exercise.service';
-import { InMemoryStateService } from '../progress/in-memory-state.service';
+import { PrismaStateService } from '../progress/prisma-state.service';
 import { UNITS_SEED, Unit } from '../data/units.seed';
 import { LESSONS_SEED, Lesson } from '../data/lessons.seed';
+import { normalizeQuestion, sanitizeQuestionForClient } from '../learning/utils/question-mapper.util';
+import { getAudioUrlForQuestion } from '../learning/utils/audio-lookup.util';
+import { PrismaService } from '../../prisma/prisma.service';
+import { StorageService } from '../../storage/storage.service';
 
 export interface LessonInternal {
   lessonId: string;
@@ -18,7 +22,9 @@ export interface LessonInternal {
 export class LessonService {
   constructor(
     private readonly exerciseService: ExerciseService,
-    private readonly stateService: InMemoryStateService,
+    @Inject('StateService') private readonly stateService: PrismaStateService,
+    private readonly prisma: PrismaService,
+    private readonly storageService: StorageService,
   ) {}
 
   // Use seed data: 20 Units × 3 Planets = 60 lessons total
@@ -85,7 +91,7 @@ export class LessonService {
     return this.skills.length > 0 ? this.skills[0].unitId : 'unit-1';
   }
 
-  startLesson(userId: number, lessonId: string, mode: string) {
+  async startLesson(userId: number, lessonId: string, mode: string) {
     const lesson = this.getLessonDetail(lessonId);
     if (!lesson) {
       throw new Error('Lesson not found');
@@ -101,8 +107,8 @@ export class LessonService {
     // Create ordered list of question IDs for this mode
     const questionIds = modeExercises.map((e) => e.exerciseId);
 
-    // Create session with mode and unitId
-    const session = this.stateService.createSession(
+    // Create session with mode and unitId (stored in DB)
+    const session = await this.stateService.createSession(
       userId,
       lesson.skillId, // unitId (skillId internally)
       lessonId,
@@ -110,33 +116,34 @@ export class LessonService {
       questionIds,
     );
 
-    // Return first question (per-question flow)
+    // Return first question (per-question flow) - normalized
     const firstQuestion = modeExercises[0];
+    
+    // Get audioUrl for listening questions
+    const audioUrl = firstQuestion.mode === 'listening'
+      ? await getAudioUrlForQuestion(firstQuestion.exerciseId, this.prisma, this.storageService)
+      : undefined;
+
+    const normalized = normalizeQuestion(firstQuestion, audioUrl);
+    const sanitized = sanitizeQuestionForClient(normalized);
 
     return {
       sessionId: session.sessionId,
       lessonId: session.lessonId,
       mode: session.mode,
       totalQuestions: session.totalQuestions,
-      question: {
-        index: 1,
-        questionId: firstQuestion.exerciseId,
-        type: firstQuestion.type,
-        prompt: firstQuestion.prompt,
-        choices: firstQuestion.choices,
-        hintAvailable: !!firstQuestion.hint,
-      },
+      question: sanitized,
     };
   }
 
-  finishLesson(sessionId: string) {
-    const session = this.stateService.finishSession(sessionId);
+  async finishLesson(sessionId: string) {
+    const session = await this.stateService.finishSession(sessionId);
     if (!session) {
       throw new Error('Session not found');
     }
 
     const accuracy = session.totalQuestions > 0 ? session.correctCount / session.totalQuestions : 0;
-    const progress = this.stateService.getUserProgress(session.userId);
+    const progress = await this.stateService.getUserProgress(session.userId);
 
     // Calculate mastery delta (simplified: +1 if accuracy >= 0.7, else 0)
     const lesson = this.getLessonDetail(session.lessonId);
@@ -145,12 +152,12 @@ export class LessonService {
 
     // Update unit mastery if accuracy >= 0.7
     if (masteryDelta > 0) {
-      this.stateService.updateSkillMastery(session.userId, unitId, masteryDelta);
+      await this.stateService.updateSkillMastery(session.userId, unitId, masteryDelta);
     }
-    const currentMastery = this.stateService.getSkillMastery(session.userId, unitId);
+    const currentMastery = await this.stateService.getSkillMastery(session.userId, unitId);
 
     // Get completed modes for this planet
-    const completedModes = this.stateService.getCompletedModesForPlanet(
+    const completedModes = await this.stateService.getCompletedModesForPlanet(
       session.userId,
       session.lessonId,
     );

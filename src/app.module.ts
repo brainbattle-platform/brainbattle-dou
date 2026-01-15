@@ -11,11 +11,18 @@ import { ReviewModule } from './duo/review/review.module';
 import { RecommendModule } from './duo/recommend/recommend.module';
 import { TelemetryModule } from './duo/telemetry/telemetry.module';
 import { NotificationModule } from './duo/notification/notification.module';
+import { LearningModule } from './duo/learning/learning.module';
+import { AdminModule } from './duo/admin/admin.module';
+import { FilesModule } from './duo/files/files.module';
+import { AudioAssetsModule } from './duo/learning/assets/audio-assets.module';
+import { StorageModule } from './storage/storage.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { UserContextModule } from './common/user/user-context.module';
 
 @Module({
   imports: [
     PrismaModule,
+    UserContextModule, // Global user context module
     UserProfileModule,
     LanguageModule,
     CourseModule,
@@ -28,6 +35,11 @@ import { PrismaModule } from './prisma/prisma.module';
     RecommendModule,
     TelemetryModule,
     NotificationModule,
+    LearningModule,
+    AdminModule, // Admin CRUD APIs
+    FilesModule, // Audio files CRUD (legacy)
+    AudioAssetsModule, // Audio assets CRUD with MinIO
+    StorageModule, // MinIO storage service
   ],
 })
 export class AppModule {}
